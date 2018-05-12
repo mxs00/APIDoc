@@ -67,10 +67,9 @@ namespace APIDoc
 					{
 						//read and display policy
 						case "wsp:All":
-							//sA.Append(StrUtil.PrefixSpaces("All assertions must evaluate to true. ", _spaces));
-							sA.AppendWithSpaces("All assertions must evaluate to true. ", _spaces);
+							sA.AppendWithSpaces("All assertions must evaluate to true. ", _spaces);//TODO handle required attribute value
 							//sAppend("All assertions must evaluate to true. ");
-							sAppend(node.Name); sAppend(": "); WriteAttributesGeneric(node);
+							//sA.Append(node.Name); sA.Append(": "); WriteAttributesGeneric(node);
 							//Print individual children of the node, gets only direct children of the node
 							_spaces += INDENT;
 							foreach (XmlNode child in children)
@@ -80,8 +79,8 @@ namespace APIDoc
 							_spaces -= INDENT;
 							break;
 						case "wsp:OneOrMore":
-							sAppend("At least one assertion must evaluate to true");
-							sAppend(node.Name); sAppend(": "); WriteAttributesGeneric(node);
+							sA.AppendWithSpaces("At least one assertion must evaluate to true", _spaces);//TODO handle required attribute value
+							//sA.Append(node.Name); sA.Append(": "); WriteAttributesGeneric(node);
 							//Print individual children of the node, gets only direct children of the node
 							_spaces += INDENT;
 							foreach (XmlNode child in children)
@@ -129,12 +128,16 @@ namespace APIDoc
 							break;
 						//skip node name
 						case "L7p:CommentAssertion":
-							sA.Append(AttributesText(node, true, false));
-							foreach (XmlNode child in children)
-							{
-								WriteNodes(child);
-							}
-							break;
+                            //L7PAssertionComment oC = new L7PAssertionComment(node, _man);
+                            //oC.Process();
+                            //sA.AppendLine(oC.ToString());
+
+                            sA.Append(AttributesText(node, true, false));
+                            foreach (XmlNode child in children)
+                            {
+                                WriteNodes(child);
+                            }
+                            break;
 					    //
 					    case "L7p:SetVariable":
 					        sAppend("Set Context Variable: ");
@@ -143,8 +146,8 @@ namespace APIDoc
 
                         //remove new line characters
                         case "L7p:Comment":
-							sAppend("@Comment ");
-							sA.Append(AttributesText(node,true,false));
+	                        sA.AppendWithSpaces("@Comment " + AttributesText(node, true, false), _spaces);
+							//sA.Append(AttributesText(node,true,false));
 							//WriteAttributesGeneric(node);
 							Getchilds(children);
 							break;
@@ -154,11 +157,12 @@ namespace APIDoc
 							Getchilds(children);
 							break;
 						case "L7p:ComparisonAssertion":
-							sA.AppendWithSpaces("Compare Variable: ", _spaces);
-							sAppend(L7p_ComparisonAssertion(node));
-							//Getchilds(children);
+							sA.AppendWithSpaces("Compare Variable: " + L7p_ComparisonAssertion(node), _spaces);
 							break;
-
+						case "L7p:Encapsulated":
+							L7PEncapsulated oE = new L7PEncapsulated(node,_man); oE.Process();
+							sA.AppendWithSpaces(oE.ToString(), _spaces);
+							break;
 
 						default://
 							if (cCount <= 0)
@@ -290,9 +294,7 @@ namespace APIDoc
 			if (xNode.Attributes != null)
 			{
 				XmlAttributeCollection attrs = xNode.Attributes;
-
 				if (attrs.Count > 0) sTemp.Append("[");
-
 				foreach (XmlAttribute attr in attrs)
 				{
 					hasData = true;
@@ -310,22 +312,21 @@ namespace APIDoc
 			if (hasData)
 			{
 				sTemp.Append(" ]");
-				if (newLine) sTemp.AppendLine("");
+				if (newLine) sTemp.Append("");
 				return sTemp.ToString();
 			}
 
-			else
-				return string.Empty;
+			return string.Empty;
 		}
 
 	    private string L7p_SetVariable(XmlNode xNode)
 	    {
             StringBuilder sB = new StringBuilder(450);
-	        string sVariableToSet = xNode.AA_AttributeValue("L7p:VariableToSet/@stringValue", _man);
+	        string sVariableToSet = xNode.AA_AttributeValueXPAth("L7p:VariableToSet/@stringValue", _man);
 	        string sBase64Encoded = xNode.AA_AttributeValueDecodeBase64("L7p:Base64Expression/@stringValue", _man);
-	        string sDatatype = xNode.AA_AttributeValue("L7p:DataType/@stringValue", _man);
-	        string sContentType = xNode.AA_AttributeValue("L7p:ContentType/@stringValue", _man);
-	        string sEnabled = xNode.AA_AttributeValue("L7p:Enabled/@booleanValue", _man);
+	        string sDatatype = xNode.AA_AttributeValueXPAth("L7p:DataType/@stringValue", _man);
+	        string sContentType = xNode.AA_AttributeValueXPAth("L7p:ContentType/@stringValue", _man);
+	        string sEnabled = xNode.AA_AttributeValueXPAth("L7p:Enabled/@booleanValue", _man);
 
             sB.Append(sVariableToSet); sB.Append("="); sB.Append(sBase64Encoded);
 	        sB.Append("| ");
@@ -351,55 +352,159 @@ namespace APIDoc
 	        //Console.WriteLine(n.InnerText);
 	    }
 
+		/// <summary>
+		/// analyse and format comparision assertion
+		/// TODO: fix when multiple items are part of the predicates
+		/// </summary>
+		/// <param name="xNode"></param>
+		/// <returns></returns>
 		private string L7p_ComparisonAssertion(XmlNode xNode)
 		{
 			StringBuilder sB = new StringBuilder(450);
-			string sExpression1 = xNode.AA_AttributeValue("L7p:Expression1/@stringValue", _man);
-			string sExpression2 = xNode.AA_AttributeValue("L7p:Expression2/@stringValue", _man);
-			string sCaseSensitive = xNode.AA_AttributeValue("L7p:CaseSensitive/@booleanValue", _man);
+			StringBuilder sTemp = new StringBuilder(450);
+			string sExpression1 = xNode.AA_AttributeValueXPAth("L7p:Expression1/@stringValue", _man);
 
-			string sPredicates = xNode.AA_AttributeValueDecodeBase64("L7p:Predicates/@predicates", _man);
-			//string sDatatype = xNode.AA_AttributeValue("L7p:DataType/@stringValue", _man);
-			//string sContentType = xNode.AA_AttributeValue("L7p:ContentType/@stringValue", _man);
-			//string sEnabled = xNode.AA_AttributeValue("L7p:Enabled/@booleanValue", _man);
-
-			sB.Append(sExpression1); sB.Append("=");
-			sB.Append(sExpression2);
-			if (sCaseSensitive != string.Empty && sCaseSensitive == "true")
-			{
-				sB.Append(" (case sensetive);"); 
-			}
-			//sB.Append("| ");
-			XmlNodeList xnList = _xmlDoc.SelectNodes("L7p:Predicates/L7p:item", _man);
+			XmlNodeList xnList = xNode.SelectNodes("L7p:Predicates/L7p:item", _man);
 			foreach (XmlNode xn in xnList)
 			{
-				//itemReader iPol = new itemReader(xn, _man);
-				//WriteNodes(xn);
+				for (int i = 0; i < xn.Attributes.Count; i++)
+				{
+					string sName = xn.Attributes[i].Name;
+					string sVal = xn.Attributes[i].Value;
+					switch (sName)
+					{
+						case "dataType":
+							break;
+						case "binary":
+							string sCaseSen = "(case sensitive)";
+							string sRValue = string.Empty;
+							string sNegated = string.Empty;
+
+							string sEq = "is equal to";
+							for (int j = 0; j < xn.ChildNodes.Count; j++)
+							{
+								string sWname = xn.ChildNodes[j].Name;
+								string sWval = xn.Attributes[i].Value;
+								switch (sWname)
+								{
+									case "L7p:CaseSensitive":
+										sCaseSen = xn.ChildNodes[j].AA_AttributeValue("booleanValue");
+										if (sCaseSen == "false") sCaseSen = String.Empty;
+										break;
+									case "L7p:RightValue":
+										sRValue = xn.ChildNodes[j].AA_AttributeValue("stringValue");
+										break;
+									case "L7p:Negated":
+										sNegated = xn.ChildNodes[j].AA_AttributeValue("booleanValue");
+										if (sNegated == "true") sEq = "is not equal to";							
+										break;
+								}
+							}
+
+							sTemp.Append(sEq); sTemp.Append(" "); sTemp.Append(sRValue); sTemp.Append(" "); sTemp.Append(sCaseSen); sTemp.Append(" ");
+							break;
+						default:
+							break;
+					}
+				}
 			}
 
-			if (sPredicates != string.Empty)
-			{
-
-
-				//sB.Append("Enabledl"); sB.Append(":"); sB.Append(sEnabled); sB.Append("| ");
-			}
-
-			//if (sDatatype != string.Empty)
-			//{
-			//	sB.Append("DataType"); sB.Append(":"); sB.Append(sDatatype); sB.Append("| ");
-			//}
-
-			//if (sContentType != string.Empty)
-			//{
-			//	sB.Append("ContentType"); sB.Append(":"); sB.Append(sContentType); sB.Append("| ");
-			//}
-
-			sB.AppendLine();
-
+			sB.Append(sExpression1); sB.Append(" ");
+			sB.Append(sTemp.ToString()); sB.Append(" ;If Multivalued all values must pass ");
 			return sB.ToString();
-			//Console.WriteLine(n.InnerText);
 		}
 
 
 	}
+	/// <summary>
+	/// handle Encapsulated Assertions
+	/// TODO lookup for Encapsulated assertion and insert the logic tree -- as a reference to associated logic
+	/// TODO add to dependency matrix to generate dependency tree
+	/// TODO handle Parameters sub nodes
+	/// 
+	/// </summary>
+	public class L7PEncapsulated
+	{
+		private StringBuilder sbX = new StringBuilder(450);
+		private StringBuilder _sbTemp = new StringBuilder(450);
+		private readonly XmlNode _xNode;
+		private readonly XmlNamespaceManager _man;
+
+		private string _sName = string.Empty;
+		private string _sGuid = string.Empty;
+
+		public L7PEncapsulated(XmlNode xn, XmlNamespaceManager man)
+		{
+			this._man = man;
+			this._xNode = xn;
+		}
+
+		public void Process()
+		{
+			//get alll comments
+			XmlNodeList xnList = _xNode.SelectNodes("L7p:AssertionComment", _man);
+			foreach (XmlNode xn in xnList)
+			{
+				L7PAssertionComment oC = new L7PAssertionComment(xn, _man);
+				oC.Process();
+				sbX.AppendLine(oC.ToString());
+			}
+			_sName = _xNode.AA_AttributeValueXPAth("L7p:EncapsulatedAssertionConfigName/@stringValue", _man);
+			_sGuid = _xNode.AA_AttributeValueXPAth("L7p:EncapsulatedAssertionConfigGuid/@stringValue", _man);
+
+		}
+
+		public override string ToString()
+		{
+			sbX.Append(_sName);
+			//sbX.AppendLine();
+			return sbX.ToString();
+		}
+
+	}
+
+	public class L7PAssertionComment
+	{
+		private StringBuilder sbX = new StringBuilder(450);
+		private StringBuilder _sbTemp = new StringBuilder(450);
+		private readonly XmlNode _xNode;
+		private readonly XmlNamespaceManager _man;
+
+		string _sLeftComment = string.Empty;
+		string _sRightComment = string.Empty;
+
+		public L7PAssertionComment(XmlNode xn, XmlNamespaceManager man)
+		{
+			this._man = man;
+			this._xNode = xn;
+		}
+
+		public void Process()
+		{
+			XmlNodeList xnList = _xNode.SelectNodes("L7p:Properties/L7p:entry", _man);
+			foreach (XmlNode xn in xnList)
+			{
+				string sKey = xn.AA_AttributeValueXPAth("L7p:key/@stringValue", _man);
+				string sValue = xn.AA_AttributeValueXPAth("L7p:value/@stringValue", _man);
+				switch (sKey)
+				{
+					case "LEFT.COMMENT":
+						_sLeftComment = sValue;
+						break;
+					case "RIGHT.COMMENT":
+						_sRightComment = sValue;
+						break;
+				}
+				sbX.Append("@AssertionComment:"); sbX.Append(_sLeftComment); sbX.Append(" - "); sbX.Append(_sRightComment);
+				//sbX.AppendLine();
+			}
+		}
+
+		public override string ToString()
+		{
+			return sbX.ToString();
+		}
+
+	}
+
 }
