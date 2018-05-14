@@ -103,19 +103,18 @@ namespace APIDoc
 			string[] partsFromString = s.Split(	new string[] { "\r\n" }, StringSplitOptions.None);
 
 			//if input is multiline then prefix spaces for each line
-			if(partsFromString.Length > 0)
+			if(partsFromString.Length > 1)
 			{
 				for (int i = 0; i < partsFromString.Length; i++)
 				{
 					sbX.Append(new string(' ', spaces));
 					sbX.AppendLine(partsFromString[i]);
 				}
-
 			}
 			else
 			{
 				sbX.Append(new string(' ', spaces));
-				sbX.Append(s);
+				sbX.AppendLine(s);
 			}
 			return sbX.ToString();
 		}
@@ -218,7 +217,7 @@ namespace APIDoc
 		/// <summary>
 		/// This class is used to implement generic methods that are applicable to all sub classes
 		/// </summary>
-		public static string AA_AttributeValue(this XmlNode anyobj, string xpathval, XmlNamespaceManager _man)
+		public static string AA_AttributeValueXPAth(this XmlNode anyobj, string xpathval, XmlNamespaceManager _man)
 		{
 
 			string attrVal = string.Empty;
@@ -227,6 +226,25 @@ namespace APIDoc
 				attrVal = anyobj.SelectSingleNode(xpathval, _man).Value;
 			}
 			catch (Exception ex)
+			{
+
+			}
+
+			return attrVal;
+
+		}
+		public static string AA_AttributeValue(this XmlNode anyobj, string xpathval)
+		{
+
+			if (anyobj == null) return string.Empty;
+
+			string attrVal = string.Empty;
+			try
+			{
+				
+				attrVal = anyobj.Attributes[xpathval].Value;
+			}
+			catch 
 			{
 
 			}
@@ -288,8 +306,11 @@ namespace APIDoc
 		public static void AppendWithSpaces(this StringBuilder anyobj, string s, int spaces)
 		{
 
-			anyobj.Append(new string(' ', spaces));
-			anyobj.Append(s);
+
+			anyobj.Append(StrUtil.PrefixSpaces(s, spaces));
+
+			//anyobj.Append(new string(' ', spaces));
+			//anyobj.Append(s);
 
 		}
 
