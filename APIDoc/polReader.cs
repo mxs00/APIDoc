@@ -30,8 +30,9 @@ namespace APIDoc
             _id = _xn["l7:Id"].InnerText;
             _type = _xn["l7:Type"].InnerText;
 
+	        Tracker.addName(_id, _name);
 
-            sA.Append("Name:");
+			sA.Append("Name:");
             sA.AppendLine(_name);
 
             sA.Append("Id:");
@@ -47,7 +48,8 @@ namespace APIDoc
             sA.Append("");
             sA.AppendLine("");
 
-            XmlNodeList xnList = _xn.SelectNodes("l7:Resource/l7:Policy/l7:PolicyDetail", _man);
+	        
+			XmlNodeList xnList = _xn.SelectNodes("l7:Resource/l7:Policy/l7:PolicyDetail", _man);
             //go through list of all resource 
             foreach (XmlNode xNode in xnList)
             {

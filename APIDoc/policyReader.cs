@@ -42,7 +42,7 @@ namespace APIDoc
 			XmlNodeList xnList = _xmlDoc.SelectNodes("wsp:Policy", _man);
 			foreach (XmlNode xn in xnList)
 			{
-				itemReader iPol = new itemReader(xn, _man);
+				ItemReader iPol = new ItemReader(xn, _man);
 				WriteNodes(xn);
 			}
 

@@ -7,7 +7,7 @@ using System.Xml;
 
 namespace APIDoc
 {
-	class itemReader
+	class ItemReader
 	{
 		private XmlNode _xn;
 		private XmlNamespaceManager _man;
@@ -16,7 +16,7 @@ namespace APIDoc
 		private string _type;
 		private StringBuilder sA = new StringBuilder(3900);
 
-		public itemReader(XmlNode xn, XmlNamespaceManager man)
+		public ItemReader(XmlNode xn, XmlNamespaceManager man)
 		{
 			this._xn = xn;
 			_man = man;
@@ -24,54 +24,122 @@ namespace APIDoc
 
 		public void Analys(string sFolder)
 		{
-			_name = _xn["l7:Name"].InnerText;
-			_id = _xn["l7:Id"].InnerText;
-			_type = _xn["l7:Type"].InnerText;
+			//_name = _xn["l7:Name"].InnerText;
+			//_id = _xn["l7:Id"].InnerText;
+			//_type = _xn["l7:Type"].InnerText;
 
 
-			sA.Append("Name:");
-			sA.AppendLine(_name);
+			//sA.Append("Name:");
+			//sA.AppendLine(_name);
 
-			sA.Append("Id:");
-			sA.AppendLine(_id);
+			//sA.Append("Id:");
+			//sA.AppendLine(_id);
 
-			sA.Append("Type:");
-			sA.AppendLine(_type);
+			//sA.Append("Type:");
+			//sA.AppendLine(_type);
 
+			//sA.Append("");
+			//sA.AppendLine("");
+
+			XmlNode nSD = _xn.SelectSingleNode("l7:Resource/l7:Service/l7:ServiceDetail", _man);
+
+			SrvProp oS = new SrvProp();
+
+			oS.Name = _xn.AA_NodeText("l7:Name", _man);
+			oS.Id = _xn.AA_NodeText("l7:Id", _man);
+			oS.Type = _xn.AA_NodeText("l7:Type", _man);
+
+			oS.FolderId = nSD.AA_AttributeValue("folderId");
+			oS.Version = nSD.AA_AttributeValue("version");
+			oS.Enabled = nSD.AA_NodeText("l7:Enabled", _man);
+			//oS.Url = nSrvMap.AA_NodeText("l7:ServiceMappings/l7:HttpMapping/l7:UrlPattern", _man);
+
+			//get node for service mapping
+			XmlNode nSrvMap = nSD.SelectSingleNode("l7:ServiceMappings/l7:HttpMapping", _man);
+			oS.Url = nSrvMap.AA_NodeText("l7:UrlPattern", _man);
+			oS.Verbs = nSrvMap.AA_SubNodesTextDelimited("l7:Verbs/l7:Verb", _man);
+			//get all properties
+			XmlNodeList xlProp = nSD.SelectNodes("l7:Properties/l7:Property", _man);
+			foreach (XmlNode xNode in xlProp)
+			{
+				string sKey = xNode.AA_AttributeValue("key");
+				string sVal = xNode.InnerText;
+				switch (sKey)
+				{
+					case "internal":
+						oS.Sinternal = sVal;
+						break;
+					case "policyRevision":
+						oS.PolicyRevision = sVal;
+						break;
+					case "soap":
+						oS.Soap = sVal;
+						break;
+					case "tracingEnabled":
+						oS.TracingEnabled = sVal;
+						break;
+					case "wssProcessingEnabled":
+						oS.WssProcessingEnabled = sVal;
+						break;
+				}
+			}
+
+			//get node for service mapping
+			XmlNodeList nPolNodes = _xn.SelectNodes("l7:Resource/l7:Service/l7:Resources/l7:ResourceSet/l7:Resource", _man);
+			foreach (XmlNode xNode in nPolNodes)
+			{
+				string sType = xNode.AA_AttributeValue("type");
+				if (sType == "policy")
+				{
+					oS.PolicyRevision = xNode.AA_AttributeValue("version");
+					oS.PolicyXml = xNode.InnerText;
+				}
+			}
+
+			Tracker.addSrvObject(oS.Id, oS);
+			//if (_type == "SERVICE" )
+			//   {
 			sA.Append("");
-			sA.AppendLine("");
+			sA.AppendLine(oS.HeaderText());
+			sA.AppendLine("====================================");
+			sA.AppendLine("======Policy XML====================");
+			sA.AppendLine("====================================");
+			sA.AppendLine(oS.PolicyXml);
+			sA.AppendLine("====================================");
+			sA.AppendLine("======Policy Text====================");
+			sA.AppendLine("====================================");
+			sA.Append("Policy version: "); sA.AppendLine(oS.PolicyRevision);
+			sA.AppendLine();
+			policyReader oP = new policyReader(oS.PolicyXml);
+
+			sA.Append(oP.process());
 
 
-		    if (_type == "SERVICE" )
-		    {
-		        sA.Append("");
-		        sA.AppendLine("");
+			//XmlNodeList xnList = _xn.SelectNodes("l7:Resource", _man);
+			////go through list of all resource 
+			//foreach (XmlNode xNode in xnList)
+			//{
+			//	//WriteNodes(xNode);
+			//	WriteResource(xNode);
+			//	//string firstName = xn["FirstName"].InnerText;
+			//	//string lastName = xn["LastName"].InnerText;
+			//	//Console.WriteLine("Name: {0} {1}", firstName, lastName);
+			//	sA.AppendLine("====================================");
+			//}
 
-		        XmlNodeList xnList = _xn.SelectNodes("l7:Resource", _man);
-		        //go through list of all resource 
-		        foreach (XmlNode xNode in xnList)
-		        {
-		            //WriteNodes(xNode);
-		            WriteResource(xNode);
-		            //string firstName = xn["FirstName"].InnerText;
-		            //string lastName = xn["LastName"].InnerText;
-		            //Console.WriteLine("Name: {0} {1}", firstName, lastName);
-		            sA.AppendLine("====================================");
-		        }
+			//XmlNode xnList = _xn.SelectSingleNode("l7:Resource", _man);
+			//WriteNodes(xnList);
 
-		        //XmlNode xnList = _xn.SelectSingleNode("l7:Resource", _man);
-		        //WriteNodes(xnList);
-
-		        //Console.WriteLine("Name: {0} {1}", _name, _id);
+			//Console.WriteLine("Name: {0} {1}", _name, _id);
 
 
-		        FileFuncs.WriteTxtFile(sFolder + @"\" + this.fileName(), sA.ToString());
+			//FileFuncs.WriteTxtFile(sFolder + @"\" + this.fileName(), sA.ToString());
+			FileFuncs.WriteTxtFile(sFolder + @"\" + oS.FileName(), sA.ToString());
+
+			//}
 
 
-            }
-
-
-        }
+		}
 
 
 		private string fileName()
@@ -107,7 +175,7 @@ namespace APIDoc
 							string sP = node.InnerText;
 							sA.Append(sP);
 							policyReader oP = new policyReader(sP);
-							
+
 							sA.Append(oP.process());
 							break;
 						//print node name & attributes
@@ -130,8 +198,8 @@ namespace APIDoc
 						case "l7:ServiceMappings":
 						case "l7:HttpMapping":
 						case "l7:Properties":
-						
-						
+
+
 							sA.Append("===> "); sA.AppendLine(node.Name);
 							break;
 						case "l7:Name":
@@ -139,7 +207,7 @@ namespace APIDoc
 							WriteAttributesGeneric(node);
 							break;
 						case "l7:Property":
-							WriteAttributesGeneric(node,false); sA.Append(", "); sA.AppendLine(node.FirstChild.InnerText);
+							WriteAttributesGeneric(node, false); sA.Append(", "); sA.AppendLine(node.FirstChild.InnerText);
 							processChildNodes = false;
 							break;
 
@@ -241,7 +309,7 @@ namespace APIDoc
 
 				foreach (XmlAttribute attr in attrs)
 				{
-					sA.Append(" "); sA.Append(attr.Name); sA.Append(":"); sA.Append(attr.Value); 
+					sA.Append(" "); sA.Append(attr.Name); sA.Append(":"); sA.Append(attr.Value);
 				}
 			}
 			if (newLine) sA.AppendLine("");

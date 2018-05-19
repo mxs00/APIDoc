@@ -268,6 +268,29 @@ namespace APIDoc
 			return attrVal;
 
 		}
+		public static string AA_SubNodesTextDelimited(this XmlNode anyobj, string childNodesName, XmlNamespaceManager _man, string sDel = " | " )
+		{
+
+			StringBuilder sV = new StringBuilder(200);
+			if (anyobj.HasChildNodes)
+			{
+				//select all services
+				XmlNodeList xnList = anyobj.SelectNodes(childNodesName, _man);
+
+				//go through list of all resource 
+				foreach (XmlNode sNodeService in xnList)
+				{
+					sV.Append(sNodeService.InnerText);
+					sV.Append(sDel);
+				}
+
+
+			}
+
+
+			return sV.ToString();
+
+		}
 		public static string AA_AttributeValueDecodeBase64(this XmlNode anyobj, string xpathval, XmlNamespaceManager _man)
 		{
 

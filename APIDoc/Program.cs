@@ -120,7 +120,7 @@ namespace APIDoc
 					case "JDBC_CONNECTION":
 					case "LOG_SINK":
 						break;
-					case "zPOLICY":
+					case "POLICY":
 						PolReader iP = new PolReader(xn, manager);
 						iP.Analys(sOutPolicyFolder);
 						break;
@@ -135,7 +135,7 @@ namespace APIDoc
 						sUrlPattern = xn.AA_NodeText("l7:Resource/l7:Service/l7:ServiceDetail/l7:ServiceMappings/l7:HttpMapping/l7:UrlPattern", manager);
 						sSerEnabled = xn.AA_NodeText("l7:Resource/l7:Service/l7:ServiceDetail/l7:Enabled", manager);
 						//sUrlPattern = xn["l7:Resource/l7:Service/l7:ServiceDetail/l7:ServiceMappings/l7:HttpMapping/l7:UrlPattern"].InnerText;
-						itemReader iSrv = new itemReader(xn, manager);
+						ItemReader iSrv = new ItemReader(xn, manager);
 						iSrv.Analys(sOutServiceFolder);
 						break;
 					case "SSG_CONNECTOR":
@@ -269,6 +269,89 @@ namespace APIDoc
 			{
 				DisplayNodes(child);
 			}
+		}
+
+
+	}
+
+	public static class Tracker
+	{
+		public static Dictionary<string, string> dpath = new Dictionary<string, string>();
+		public static Dictionary<string, SrvProp> durl = new Dictionary<string, SrvProp>();
+
+		public static void addName(string key,string sPath)
+		{
+			if (!dpath.ContainsKey(key))
+			{
+				dpath.Add(key, sPath);
+			}
+		}
+		public static void addSrvObject(string key, SrvProp sValue)
+		{
+			if (!durl.ContainsKey(key))
+			{
+				durl.Add(key, sValue);
+			}
+		}
+	}
+
+	public class SrvProp
+	{
+		public string Id;
+		public string Name;
+		public string Type;
+		public string Enabled;
+		public string FolderId;
+		public string Version;
+		public string Verbs;
+		public string Url;
+
+		public string Sinternal;
+		public string PolicyRevision;
+		public string Soap;
+		public string TracingEnabled;
+		public string WssProcessingEnabled;
+		public string PolicyVer;
+		public string PolicyXml;
+		public string PolicyText;
+
+
+
+
+		public string HeaderText()
+		{
+			StringBuilder sX = new StringBuilder(800);
+			sX.AppendLine("=====================================================================================================");
+			sX.AppendLine("=================== Service Header ==================================================================");
+			sX.AppendLine("=====================================================================================================");
+			sX.Append("Service Name: "); sX.AppendLine(this.Name);
+			sX.Append("Id: "); sX.AppendLine(this.Id);
+			sX.Append("Folder Id: "); sX.AppendLine(this.FolderId);
+			sX.Append("Version: "); sX.AppendLine(this.Version);
+			sX.Append("Type: "); sX.AppendLine(this.Type);
+			sX.Append("Is Enabled: "); sX.AppendLine(this.Enabled);
+			sX.Append("URL: "); sX.AppendLine(this.Url);
+			sX.Append("HTTP Verbs: "); sX.AppendLine(this.Verbs);
+
+			sX.Append("Policy Revision: "); sX.AppendLine(this.PolicyRevision);
+			sX.Append("Internal: "); sX.AppendLine(this.Sinternal);
+			sX.Append("Soap: "); sX.AppendLine(this.Soap);
+			sX.Append("Tracing Enabled: "); sX.AppendLine(this.TracingEnabled);
+			sX.Append("WSS Processing Enabled: "); sX.AppendLine(this.WssProcessingEnabled);
+			sX.AppendLine("=====================================================================================================");
+
+			return sX.ToString();
+		}
+
+		/// <summary>
+		/// return filename based on the name attribute of the service
+		/// </summary>
+		/// <returns></returns>
+		public string FileName()
+		{
+			string fName = FileFuncs.SanitizeFileName(this.Name, '_', false) + ".txt";
+
+			return fName;
 		}
 
 
