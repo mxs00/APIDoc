@@ -38,7 +38,7 @@ namespace APIDoc
 			//TODO check if folder exists and create if it does not exist 
 
 			//TODO append date_time_sub folder
-			string sOutFolder = aX.strVal(1) + @"\" + aX.strVal(0).Replace(".xml", "") + @"\" + DateTime.Now.ToString("yyyy_MM_dd");
+			string sOutFolder = aX.strVal(1) + @"\" + aX.strVal(0).Replace(".xml", "");// + @"\" + DateTime.Now.ToString("yyyy_MM_dd");
 			sOutFolder = sOutFolder.Replace(@"\\", @"\");
 
 
@@ -67,6 +67,9 @@ namespace APIDoc
 			foreach (XmlNode xn in xnList)
 			{
 				string sType = xn["l7:Type"].InnerText;
+				string sName = xn["l7:Name"].InnerText;
+				string sID = xn["l7:Id"].InnerText;
+
 				if (!dictCheck.ContainsKey(sType))
 				{
 					string sCFold = sOutFolder + @"\" + sType;
@@ -75,10 +78,20 @@ namespace APIDoc
 					FileFuncs.CreateFolder(sOutEnAssertFolder);
 				}
 
-				//FileFuncs
+
+				Item oI = new Item();
+				oI.Id = xn["l7:Id"].InnerText;
+				oI.Name = xn["l7:Name"].InnerText;
+				oI.Type = xn["l7:Type"].InnerText;
+				oI.ItemXML = xn.InnerXml;
+				Tracker.addItem(oI.Id, oI);
 
 			}
 
+			foreach (KeyValuePair<string, Item> oI in Tracker.oItems)
+			{
+
+			}
 
 
 
@@ -95,12 +108,11 @@ namespace APIDoc
 				string sType = xn["l7:Type"].InnerText;
 				string sName = xn["l7:Name"].InnerText;
 				string sID = xn["l7:Id"].InnerText;
+
 				string sUrlPattern = string.Empty;
 				string sSerEnabled = string.Empty;
 
-				sX.Append(xn["l7:Id"].InnerText); sX.Append("|");
-				sX.Append(sName); sX.Append("|");
-				sX.Append(sType); sX.Append("|");
+				sX.Append(sID); sX.Append("|");sX.Append(sName); sX.Append("|");sX.Append(sType); sX.Append("|");
 
 				switch (sType)
 				{
@@ -132,11 +144,17 @@ namespace APIDoc
 					case "SERVER_MODULE_FILE":
 						break;
 					case "SERVICE":
-						sUrlPattern = xn.AA_NodeText("l7:Resource/l7:Service/l7:ServiceDetail/l7:ServiceMappings/l7:HttpMapping/l7:UrlPattern", manager);
-						sSerEnabled = xn.AA_NodeText("l7:Resource/l7:Service/l7:ServiceDetail/l7:Enabled", manager);
+						//sUrlPattern = xn.AA_NodeText("l7:Resource/l7:Service/l7:ServiceDetail/l7:ServiceMappings/l7:HttpMapping/l7:UrlPattern", manager);
+						//sSerEnabled = xn.AA_NodeText("l7:Resource/l7:Service/l7:ServiceDetail/l7:Enabled", manager);
 						//sUrlPattern = xn["l7:Resource/l7:Service/l7:ServiceDetail/l7:ServiceMappings/l7:HttpMapping/l7:UrlPattern"].InnerText;
 						ItemReader iSrv = new ItemReader(xn, manager);
-						iSrv.Analys(sOutServiceFolder);
+						iSrv.AddService(sOutServiceFolder);
+						SrvProp oS = null;
+						if (Tracker.GetServiceObject(sID, out oS))
+						{
+							sUrlPattern = oS.Url;
+							sSerEnabled = oS.Enabled;
+						}
 						break;
 					case "SSG_CONNECTOR":
 					case "TRUSTED_CERT":
@@ -277,7 +295,8 @@ namespace APIDoc
 	public static class Tracker
 	{
 		public static Dictionary<string, string> dpath = new Dictionary<string, string>();
-		public static Dictionary<string, SrvProp> durl = new Dictionary<string, SrvProp>();
+		public static Dictionary<string, object> oStore = new Dictionary<string, object>();
+		public static Dictionary<string, Item> oItems = new Dictionary<string, Item>();
 
 		public static void addName(string key,string sPath)
 		{
@@ -286,12 +305,34 @@ namespace APIDoc
 				dpath.Add(key, sPath);
 			}
 		}
-		public static void addSrvObject(string key, SrvProp sValue)
+		public static void addObject(string key, object sValue)
 		{
-			if (!durl.ContainsKey(key))
+			if (!oStore.ContainsKey(key))
 			{
-				durl.Add(key, sValue);
+				oStore.Add(key, sValue);
 			}
+		}
+		public static void addItem(string key, Item sValue)
+		{
+			if (!oItems.ContainsKey(key))
+			{
+				oItems.Add(key, sValue);
+			}
+		}
+
+		public static bool GetServiceObject(string key,out SrvProp oS)
+		{
+			object o = null;
+			oS = null;
+			if (oStore.ContainsKey(key))
+			{
+				oStore.TryGetValue(key, out o);
+				oS = o as SrvProp;
+				if (oS == null) return false;
+				return true;
+			}
+
+			return false;
 		}
 	}
 
@@ -356,4 +397,26 @@ namespace APIDoc
 
 
 	}
+
+	public class Item
+	{
+		public string Id;
+		public string Name;
+		public string Type;
+		public string ItemXML;
+
+		/// <summary>
+		/// return filename based on the name attribute of the service
+		/// </summary>
+		/// <returns></returns>
+		public string FileName()
+		{
+			string fName = FileFuncs.SanitizeFileName(this.Name, '_', false) + ".txt";
+
+			return fName;
+		}
+
+
+	}
+
 }

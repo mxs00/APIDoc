@@ -1,7 +1,6 @@
 D:\projs\APIDoc\APIDoc\APIDoc\bin\Debug\APIDoc.exe.config
 D:\projs\APIDoc\APIDoc\APIDoc\bin\Debug\APIDoc.exe
 D:\projs\APIDoc\APIDoc\APIDoc\bin\Debug\APIDoc.pdb
-D:\projs\APIDoc\APIDoc\APIDoc\obj\Debug\APIDoc.csprojResolveAssemblyReference.cache
 D:\projs\APIDoc\APIDoc\APIDoc\obj\Debug\APIDoc.exe
 D:\projs\APIDoc\APIDoc\APIDoc\obj\Debug\APIDoc.pdb
 C:\projs\APIDoc\APIDoc\APIDoc\bin\Debug\APIDoc.exe.config
@@ -10,3 +9,4 @@ C:\projs\APIDoc\APIDoc\APIDoc\obj\Debug\APIDoc.pdb
 C:\projs\APIDoc\APIDoc\APIDoc\obj\Debug\APIDoc.csprojResolveAssemblyReference.cache
 C:\projs\APIDoc\APIDoc\APIDoc\bin\Debug\APIDoc.exe
 C:\projs\APIDoc\APIDoc\APIDoc\bin\Debug\APIDoc.pdb
+D:\projs\APIDoc\APIDoc\APIDoc\obj\Debug\APIDoc.csprojResolveAssemblyReference.cache
